@@ -1,20 +1,40 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import { UserModel } from "../database/db";
-import { z } from "zod";
+import { email, z } from "zod";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
-const userRouter = Router();
+const router = Router();
 
-userRouter.get("/health", (req, res) => {
+const signUpBody = z.object({
+  name: z.string(),
+  email: z.email(),
+  password: z.string().min(6)
+})
+
+const signInBody = z.object({
+  email: z.email(),
+  password: z.string()
+})
+
+router.get("/health", (req, res) => {
   res.send("User route is healthy");
 });
 
-userRouter.post("/signin", async (req, res) => {
+router.post("/signin", async (req, res) => {
   try {
+    // 0. parse req body with zod validation 
+    const {success, error} = signInBody.safeParse(req.body);
+
+    if(!success){
+      return res.status(400).json({
+        success: false,
+        error: "Zod validation error " + error
+      })
+    }
     // 1. parse username and password from request
     const { email, password } = req.body;
 
@@ -23,7 +43,7 @@ userRouter.post("/signin", async (req, res) => {
 
     // 3. If user not found then return that user is not there and redirect to sign up
     if (!user) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         error: "User not found"
       })
@@ -61,8 +81,17 @@ userRouter.post("/signin", async (req, res) => {
   }
 });
 
-userRouter.post("/signup", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
+    // 0. parse req with zod validation 
+    const {success, error} = signUpBody.safeParse(req.body);
+
+    if(!success){
+      return res.status(400).json({
+        success: false,
+        error: 'Zod validation error: ' + error
+      })
+    }
     // 1. parse username and password from request body
     const { name, email, password, role } = req.body;
 
@@ -102,4 +131,4 @@ userRouter.post("/signup", async (req, res) => {
   }
 });
 
-export default userRouter;
+export default router;
