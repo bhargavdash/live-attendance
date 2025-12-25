@@ -1,6 +1,7 @@
 import express from 'express'
 import mongoose from 'mongoose';
 import userRouter from './routes/userRoutes';
+import classRouter from './routes/classRoutes'
 import cors from 'cors'
 import dotenv from 'dotenv'
 dotenv.config();
@@ -19,6 +20,7 @@ app.get("/health", (req, res) => {
 })
 
 app.use('/user', userRouter);
+app.use('/class', classRouter);
 
 app.get("/username", (req, res) => {
     res.send("Welcome username to my app");
