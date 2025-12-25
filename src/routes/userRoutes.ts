@@ -1,9 +1,10 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import { UserModel } from "../database/db";
-import { email, z } from "zod";
+import { z } from "zod";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { authMiddleware, CustomRequest } from "../middleware/authMiddleware";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
@@ -130,5 +131,37 @@ router.post("/signup", async (req, res) => {
     return res.send(err);
   }
 });
+
+router.get('/me', authMiddleware, async(req: CustomRequest, res) => {
+  try{
+    // This route returns the user's info 
+    // Auth is required here. 
+
+    // 1. Get userId from auth middleware. 
+    const userId = req.userId;
+    // get user details from db
+    const user = await UserModel.findOne({_id: userId})
+    
+    if(!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+  } catch(err){
+    console.log(err);
+    return;
+  }
+})
 
 export default router;
